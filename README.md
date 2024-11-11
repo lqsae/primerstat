@@ -23,7 +23,7 @@ PrimerStat 是一个高性能的 FASTQ 测序数据引物分析工具。它可�
 
 1. 克隆仓库
    ```bash
-   git clone https://github.com/yourusername/primerstat.git
+   git clone http://172.17.25.11:8081/cg_researchprojects/primerstat.git
    ```
 
 2. 进入项目目录
@@ -64,7 +64,7 @@ Primer2 GCTAGCTA
 ## 输出文件
 PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。它们分别提供了详细的序列级别信息和总体统计数据。
 
-###1. `{sample}_primer_analysis.txt`：详细的分析结果，包含：
+### 1. `{sample}_primer_analysis.txt`：详细的分析结果，包含：
 | 字段名 | 说明 | 示例值 |
 |--------|------|--------|
 | Read_ID | 序列标识符 | @SRR1234567.1 |
@@ -88,7 +88,7 @@ PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。
 - `*` 表示错配
 - ` ` (空格) 表示插入/删除
 - `-` 表示空位
-###2. `{sample}_statistics.json`：统计信息，包含：
+### 2. `{sample}_statistics.json`：统计信息，包含：
    - 总读数
    - 成功匹配率
    - 正/负链比例
