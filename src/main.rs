@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use chrono::Local;
 use clap::Parser;
 use edlib_rs::edlibrs::{edlibAlignRs, EdlibAlignConfigRs, EdlibAlignModeRs, EDLIB_STATUS_OK, EdlibAlignTaskRs};
 use flate2::read::GzDecoder;
@@ -41,6 +40,10 @@ struct Args {
     /// 判定为二聚体的最小距离
     #[arg(short = 'd', long, default_value = "100")]
     min_distance: usize,
+    /// 最大输出序列数（0表示输出所有序列）
+    #[arg(short = 'n', long, default_value = "10000")]
+    max_output: usize,
+        
 }
 
 #[derive(Debug, Clone)]
@@ -121,7 +124,6 @@ fn align_sequence(primer: &str, seq: &str, max_errors: i32) -> Option<AlignmentR
     if result.status != EDLIB_STATUS_OK || result.editDistance < 0 || result.editDistance > max_errors {
         return None;
     }
-    
     let (start_pos, end_pos) = result.startLocations
         .zip(result.endLocations)
         .and_then(|(starts, ends)| {
@@ -346,24 +348,34 @@ fn analyze_read(
     }
 }
 
+
 fn write_analysis_results(
     output_file: &str,
     analyses: &[ReadAnalysis],
+    max_output: usize,
 ) -> Result<()> {
-    let mut file = File::create(output_file)?;
+    let file = File::create(output_file)?;
+    let mut gz_writer = flate2::write::GzEncoder::new(file, flate2::Compression::default());
     
     writeln!(
-        file,
+        gz_writer,
         "Read_ID\tLength\tStrand\tF_Primer\tR_Primer\tF_Found\tF_Pos\tF_Errors\t\
          R_Found\tR_Pos\tR_Errors\tDistance\tIs_Dimer\tF_Alignment\tR_Alignment"
     )?;
 
-    for analysis in analyses {
+    // 确定要输出的序列数量
+    let output_count = if max_output > 0 { 
+        max_output.min(analyses.len()) 
+    } else { 
+        analyses.len() 
+    };
+
+    for analysis in analyses.iter().take(output_count) {
         let f_alignment = analysis.f_match.alignment.replace('\n', "|");
         let r_alignment = analysis.r_match.alignment.replace('\n', "|");
 
         writeln!(
-            file,
+            gz_writer,
             "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             analysis.read_id,
             analysis.length,
@@ -383,6 +395,7 @@ fn write_analysis_results(
         )?;
     }
 
+    gz_writer.finish()?;
     Ok(())
 }
 
@@ -538,7 +551,7 @@ fn main() -> Result<()> {
     
     // 构建输出文件路径
     let result_file = PathBuf::from(&args.outdir)
-        .join(format!("{}_primer_analysis.txt", args.sample));
+        .join(format!("{}_primer_analysis.txt.gz", args.sample));
     let stats_file = PathBuf::from(&args.outdir)
         .join(format!("{}_statistics.json", args.sample));
 
@@ -557,8 +570,11 @@ fn main() -> Result<()> {
     
     // 写入分析结果
     println!("正在写入结果到文件: {}", result_file.display());
-    write_analysis_results(result_file.to_str().unwrap(), &analyses)
-        .context("写入结果失败")?;
+    write_analysis_results(
+        result_file.to_str().unwrap(), 
+        &analyses,
+        args.max_output
+    ).context("写入结果失败")?
 
     // 收集并写入统计结果
     let statistics = collect_statistics(&analyses, &args.sample);

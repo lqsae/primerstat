@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PrimerStat Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .alignment { 
+            font-family: monospace; 
+            white-space: pre; 
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .alignment-line {
+            display: block;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+    <h1>PrimerStat Analysis Report</h1>
+    
+    <h2>Sample Statistics</h2>
+    <table class="stats-table">
+        <!-- ... 统计信息表格 ... -->
+    </table>
+
+    <h2>Sequence Analysis Preview (First {{preview_count}} Records)</h2>
+    <table>
+        <tr>
+            <th>Read ID</th>
+            <th>Length</th>
+            <th>Strand</th>
+            <th>Forward Alignment</th>
+            <th>Reverse Alignment</th>
+            <th>Distance</th>
+            <th>Is Dimer</th>
+        </tr>
+        {{#each analyses}}
+        <tr>
+            <td>{{read_id}}</td>
+            <td>{{length}}</td>
+            <td>{{strand}}</td>
+            <td class="alignment">
+                <span class="alignment-line">{{f_query}}</span>
+                <span class="alignment-line">{{f_match}}</span>
+                <span class="alignment-line">{{f_target}}</span>
+            </td>
+            <td class="alignment">
+                <span class="alignment-line">{{r_query}}</span>
+                <span class="alignment-line">{{r_match}}</span>
+                <span class="alignment-line">{{r_target}}</span>
+            </td>
+            <td>{{distance}}</td>
+            <td>{{is_dimer}}</td>
+        </tr>
+        {{/each}}
+    </table>
+
+    <div class="note">
+        <p>Report generated at: {{timestamp}}</p>
+    </div>
+</body>
+</html>

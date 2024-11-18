@@ -43,15 +43,15 @@ primerstat -i input.fastq.gz -p primers.tsv -S sample_name -O output_dir
 ```
 ### 完整参数说明   
 ```
-Options:
--i, --input <FILE> 输入的 fastq.gz 文件
--p, --primers <FILE> 引物序列文件(TSV格式)
--O, --outdir <DIR> 输出目录 [default: output]
--S, --sample <NAME> 样本名称
--e, --max-errors <NUM> 最大允许错配数 [default: 3]
--d, --min-distance <NUM> 判定为二聚体的最小距离 [default: 100]
--h, --help 显示帮助信息
--V, --version 显示版本信息
+-i, --input <FILE>             输入的 fastq.gz 文件
+-p, --primers <FILE>           引物序列文件(TSV格式)
+-O, --outdir <DIR>             输出目录 [default: output]
+-S, --sample <NAME>            样本名称
+-e, --max-errors <NUM>         最大允许错配数 [default: 3]
+-d, --min-distance <NUM>       判定为二聚体的最小距离 [default: 100]
+-n, --max-output-records <NUM> 详细结果文件最大输出序列数 [default: 10000]
+-h, --help                     显示帮助信息
+-V, --version                  显示版本信息
 ```
 ### 引物文件格式
 
@@ -64,7 +64,10 @@ Primer2 GCTAGCTA
 ## 输出文件
 PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。它们分别提供了详细的序列级别信息和总体统计数据。
 
-### 1. `{sample}_primer_analysis.txt`：详细的分析结果，包含：
+### 1. `{sample}_primer_analysis.txt`：
+- 当序列数超过 max_output_records 时，只输出前 N 条记录
+- 文件末尾会添加截断说明
+- 包含以下列：
 | 字段名 | 说明 | 示例值 |
 |--------|------|--------|
 | Read_ID | 序列标识符 | @SRR1234567.1 |
@@ -142,25 +145,46 @@ PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。
 
 ## 注意事项
 
-1. 输入文件必须是 gzip 压缩的 FASTQ 格式
-2. 引物序列只能包含 ATCGN 碱基
-3. 建议根据系统内存大小调整批处理大小
-4. 处理大文件时请确保有足够的磁盘空间
+1. 输入文件要求：
+   - FASTQ 文件必须是 gzip 压缩格式
+   - 引物序列只能包含 A、T、G、C、N 碱基
+   - 引物文件必须是 TSV 格式
+
+2. 输出控制：
+   - 详细分析结果默认限制为 10000 条记录
+   - 可通过 -n 参数调整输出记录数
+   - 分析结果自动压缩为 gz 格式
+   - 统计结果包含所有记录的信息
+
+3. 资源使用：
+   - 建议在多核系统上运行
+   - 确保足够的磁盘空间
+   - 监控内存使用情况
+
 
 ## 示例
 
 假设输入文件为 `input.fastq.gz`，引物文件为 `primers.tsv`，样本名称为 `sample_name`，输出目录为 `output`。运行命令：
 
+1. 基本使用：
 ```bash
-primerstat -i input.fastq.gz -p primers.tsv -S sample_name -O output
+primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results
 ```
-## 许可证
 
-[您的许可证类型]
+2. 限制输出记录数：
+```bash
+primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results -n 5000
+```
+
+3. 调整错配和二聚体参数：
+```bash
+primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results -e 2 -d 150 -n 20000
+```
+
 
 ## 作者
 
-[作者信息]
+刘青山
 
 ## 贡献
 
@@ -171,3 +195,8 @@ primerstat -i input.fastq.gz -p primers.tsv -S sample_name -O output
 3. 提交您的更改
 4. 推送到分支
 5. 创建新的 Pull Request
+
+# 更新日志
+
+- 2024-11-09 初始版本   
+- 2024-11-15 添加了新的 max_output_records 参数说明，增加输出控制，优化了输出文件格式
