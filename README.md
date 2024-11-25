@@ -43,13 +43,16 @@ primerstat -i input.fastq.gz -p primers.tsv -S sample_name -O output_dir
 ```
 ### 完整参数说明   
 ```
--i, --input <FILE>             输入的 fastq.gz 文件
+-i, --input <FILE>             输入的fastq.gz文件（单端测序）或者第一端序列文件（双端测序）
+-2, --input2 <FILE>            第二端序列文件（双端测序，可选）
 -p, --primers <FILE>           引物序列文件(TSV格式)
 -O, --outdir <DIR>             输出目录 [default: output]
 -S, --sample <NAME>            样本名称
 -e, --max-errors <NUM>         最大允许错配数 [default: 3]
 -d, --min-distance <NUM>       判定为二聚体的最小距离 [default: 100]
--n, --max-output-records <NUM> 详细结果文件最大输出序列数 [default: 10000]
+-n, --max-output <NUM>         详细结果文件最大输出序列数 [default: 10000]
+-o, --min-overlap <NUM>        双端序列最小重叠长度 [default: 10]
+-m, --max-mismatch-rate <NUM>  双端序列重叠区域最大错配率 [default: 0.1]
 -h, --help                     显示帮助信息
 -V, --version                  显示版本信息
 ```
@@ -83,8 +86,7 @@ PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。
 | R_Errors | 反向引物错配数 | 0 |
 | Distance | 引物间距离 | 112 |
 | Is_Dimer | 是否为二聚体 | false |
-| F_Alignment | 正向引物比对可视化 | ATCG\|||||*|\|ATTG |
-| R_Alignment | 反向引物比对可视化 | GCTA\|\|\|\|\|\|GCTA |
+
 
 #### 比对可视化说明
 - `|` 表示完全匹配
@@ -171,15 +173,44 @@ PrimerStat 生成两种输出文件：分析结果文件和统计结果文件。
 primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results
 ```
 
-2. 限制输出记录数：
+2. 双端测序数据分析：
 ```bash
-primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results -n 5000
+primerstat -i read1.fastq.gz -2 read2.fastq.gz -p primers.tsv -S sample01 -O results \
+          -o 15 -m 0.05
 ```
 
 3. 调整错配和二聚体参数：
 ```bash
 primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results -e 2 -d 150 -n 20000
 ```
+
+## 双端测序数据处理
+
+当提供双端测序数据时，程序会：
+
+1. 自动识别配对的序列
+2. 尝试合并双端读段：
+   - 寻找最佳重叠区域
+   - 根据质量值选择重叠区域的碱基
+   - 生成合并后的序列用于引物分析
+3. 如果无法找到有效重叠：
+   - 直接连接两端序列
+   - 在结果中标记为 "merged_concat"
+4. 合并成功的序列：
+   - 在序列ID中标记重叠长度
+   - 使用合并后的序列进行引物分析
+
+### 双端数据合并参数
+
+- `min_overlap`：要求的最小重叠长度
+  - 默认值：10bp
+  - 较大的值可以提高合并可靠性
+  - 过大的值可能导致部分序列无法合并
+
+- `max_mismatch_rate`：重叠区域允许的最大错配率
+  - 默认值：0.1（10%）
+  - 较小的值可以提高合并准确性
+  - 过小的值可能导致部分序列无法合并
 
 
 ## 作者
@@ -200,3 +231,4 @@ primerstat -i input.fastq.gz -p primers.tsv -S sample01 -O results -e 2 -d 150 -
 
 - 2024-11-09 初始版本   
 - 2024-11-15 添加了新的 max_output_records 参数说明，增加输出控制，优化了输出文件格式
+- 2024-11-20 添加双端测序支持，新增序列合并功能和相关参数
